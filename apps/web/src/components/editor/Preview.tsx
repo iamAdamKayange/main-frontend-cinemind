@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { FrameDialog, framePresetFor } from "./FrameDialog";
 import { CropOverlay } from "./CropOverlay";
 import { Photo } from "@/components/visual/Photo";
-import { Pause, Play, SkipBack, SkipFwd } from "@/components/ui/icons";
+import { Film, Pause, Play, SkipBack, SkipFwd } from "@/components/ui/icons";
 import { useEditor } from "./EditorContext";
 import { cssFx } from "./InspectorGroups";
 import { FPS } from "./model";
@@ -14,13 +14,14 @@ import { FPS } from "./model";
  * Proxy preview (spec §4.4): a convenience view of the timeline, not the authoritative render.
  * Local media plays through <video>/<audio>; sample media shows illustrative frames.
  */
-export function Preview() {
+export function Preview({ onOpenMedia }: { onOpenMedia?: () => void }) {
   const { doc, playhead, playing, togglePlay, setPlayhead, assetById, duration, loop, setLoop, projectId } = useEditor();
   const [frameOpen, setFrameOpen] = useState(false);
   const [cropping, setCropping] = useState(false);
   const { run, select } = useEditor();
   const preset = framePresetFor(projectId ?? "demo", doc.sequence.width, doc.sequence.height);
   const { width, height } = doc.sequence;
+  const sequenceHasVideo = doc.tracks.some((track) => track.kind === "video" && track.clips.length > 0);
 
   const at = (c: Clip) => playhead >= c.timelineStartFrames && playhead < clipEnd(c);
 
@@ -89,7 +90,11 @@ export function Preview() {
             )}
             {videoClip && !asset?.url && asset?.photo && <Photo photo={asset.photo} sizes="60vw" className="scale-105" />}
           </div>
-          {!videoClip && <div className="absolute inset-0 grid place-items-center text-[12px] text-faint">No video at playhead</div>}
+          {!videoClip && <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-5 text-center">
+            <span className="grid h-12 w-12 place-items-center rounded-2xl border border-accent/20 bg-accent/10 text-accent"><Film size={22} /></span>
+            <div><p className="text-[14px] font-semibold text-text">{sequenceHasVideo ? "No clip at this playhead" : "Start with your footage"}</p><p className="mt-1 max-w-[260px] text-[11px] leading-relaxed text-muted">Import a video, music or image. Add it to the timeline, then select a clip to reveal its editing controls.</p></div>
+            {!sequenceHasVideo && onOpenMedia && <button onClick={onOpenMedia} className="rounded-lg bg-accent px-4 py-2 text-[12px] font-bold text-accent-ink">Open media bin</button>}
+          </div>}
           {cropping && videoClip && (
             <CropOverlay
               srcAspect={srcAspect}

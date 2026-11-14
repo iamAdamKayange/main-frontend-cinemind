@@ -18,7 +18,7 @@ import {
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { API_URL, api, getToken, type ProjectPayload, type RemoteAsset, type TimelineState } from "@/lib/api";
 import { analyzeAudioLocal, analyzeVideoLocal, fingerprint, kindOf, loadLocal, probeLocal, requestPersistence, saveLocal } from "@/lib/localMedia";
-import { FPS, SAMPLE_ASSETS, fromRemote, sampleTimeline, type EditorAsset } from "./model";
+import { FPS, emptyTimeline, fromRemote, type EditorAsset } from "./model";
 
 export interface Toast {
   id: number;
@@ -81,9 +81,9 @@ export function EditorProvider({ projectId, title: initialTitle, aspect, childre
   const [title, setTitle] = useState(initialTitle);
   const [loading, setLoading] = useState(remote);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [history, setHistory] = useState<History>(() => createHistory(sampleTimeline("demo", aspect)));
+  const [history, setHistory] = useState<History>(() => createHistory(emptyTimeline(projectId ?? "local-draft", aspect)));
   const [server, setServer] = useState<{ canUndo: boolean; canRedo: boolean }>({ canUndo: false, canRedo: false });
-  const [assets, setAssets] = useState<EditorAsset[]>(remote ? [] : SAMPLE_ASSETS);
+  const [assets, setAssets] = useState<EditorAsset[]>([]);
   const [uploads, setUploads] = useState<EditorAsset[]>([]);
   const [selectedId, select] = useState<string | null>(null);
   const [playhead, setPlayheadRaw] = useState(0);

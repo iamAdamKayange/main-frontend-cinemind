@@ -21,6 +21,9 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${display.variable} ${body.variable} ${code.variable} h-full antialiased`}>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: `try{const t=localStorage.getItem("cinemind-editor-theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch{}` }} />
+      </head>
       <body className="flex min-h-full flex-col">
         <LangProvider>
           <AuthDeepLinkHandler />

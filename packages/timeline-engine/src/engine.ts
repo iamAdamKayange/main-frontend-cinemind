@@ -356,9 +356,10 @@ function applyOne(
       if (hit.track.locked) return locked(hit.track);
       const fx = { ...hit.clip.fx, ...op.fx };
       const inR = (v: number | undefined, a: number, b: number) => v === undefined || (Number.isFinite(v) && v >= a && v <= b);
-      if (!inR(fx.brightness, -1, 1) || !inR(fx.contrast, 0, 2) || !inR(fx.saturation, 0, 3) || !inR(fx.blur, 0, 20) || !inR(fx.sharpen, 0, 5) || !inR(fx.vignette, 0, 1) || !inR(fx.bass, -12, 12) || !inR(fx.treble, -12, 12))
+      if (!inR(fx.brightness, -1, 1) || !inR(fx.contrast, 0, 2) || !inR(fx.saturation, 0, 3) || !inR(fx.blur, 0, 20) || !inR(fx.sharpen, 0, 5) || !inR(fx.vignette, 0, 1) || !inR(fx.bass, -12, 12) || !inR(fx.mid, -12, 12) || !inR(fx.treble, -12, 12) || !inR(fx.stereoPan, -1, 1) || !inR(fx.pitchSemitones, -12, 12))
         return { code: "INVALID_RANGE", message: "An effect value is out of range." };
       if (fx.look && !["none", "bw", "vintage", "warm", "cool", "cinematic"].includes(fx.look)) return { code: "INVALID_RANGE", message: "Unknown look." };
+      if (fx.voicePreset && !["natural", "deep", "bright", "telephone", "radio", "robot"].includes(fx.voicePreset)) return { code: "INVALID_RANGE", message: "Unknown voice preset." };
       hit.clip.fx = fx;
       return null;
     }

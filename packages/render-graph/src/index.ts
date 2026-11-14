@@ -205,10 +205,26 @@ export function videoFx(fx: ClipEffects | undefined): string[] {
 export function audioFx(fx: ClipEffects | undefined): string[] {
   if (!fx) return [];
   const out: string[] = [];
+  const presetPitch: Record<NonNullable<ClipEffects["voicePreset"]>, number> = { natural: 0, deep: -4, bright: 3, telephone: 0, radio: 0, robot: 0 };
+  const preset = fx.voicePreset ?? "natural";
+  if (preset === "telephone") out.push("highpass=f=350", "lowpass=f=3400", "equalizer=f=1700:t=q:w=1:g=4");
+  if (preset === "radio") out.push("highpass=f=260", "lowpass=f=4200", "equalizer=f=1200:t=q:w=1.1:g=5", "acompressor=threshold=0.16:ratio=4:attack=10:release=120");
+  if (preset === "robot") out.push("highpass=f=100", "vibrato=f=28:d=0.65");
+  const pitch = Math.max(-12, Math.min(12, (fx.pitchSemitones ?? 0) + presetPitch[preset]));
+  if (pitch !== 0) {
+    const factor = 2 ** (pitch / 12);
+    out.push(`asetrate=${Math.round(48000 * factor)}`, "aresample=48000", `atempo=${n3(1 / factor)}`);
+  }
   if (fx.denoise) out.push("afftdn=nf=-25");
-  if (fx.voice) out.push("highpass=f=90", "equalizer=f=3000:t=q:w=1.2:g=4");
+  if (fx.voice || preset === "deep" || preset === "bright") out.push("highpass=f=90", "equalizer=f=3000:t=q:w=1.2:g=4");
   if (fx.bass) out.push(`bass=g=${n3(fx.bass)}`);
+  if (fx.mid) out.push(`equalizer=f=1000:t=q:w=1:g=${n3(fx.mid)}`);
   if (fx.treble) out.push(`treble=g=${n3(fx.treble)}`);
+  if (fx.stereoPan) {
+    const left = fx.stereoPan > 0 ? 1 - fx.stereoPan : 1;
+    const right = fx.stereoPan < 0 ? 1 + fx.stereoPan : 1;
+    out.push(`pan=stereo|c0=${n3(left)}*c0|c1=${n3(right)}*c1`);
+  }
   if (fx.echo) out.push("aecho=0.8:0.6:60:0.25");
   if (fx.normalize) out.push("dynaudnorm=f=150:g=15");
   if (fx.compressor) out.push("acompressor=threshold=0.125:ratio=3:attack=20:release=250");

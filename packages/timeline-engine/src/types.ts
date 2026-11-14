@@ -59,14 +59,22 @@ export interface ClipEffects {
   denoise?: boolean;
   /** Low-shelf gain in dB, -12..12 */
   bass?: number;
+  /** Mid-band gain in dB, -12..12. */
+  mid?: number;
   /** High-shelf gain in dB, -12..12 */
   treble?: number;
+  /** Stereo balance: -1 is left, 0 center, 1 right. */
+  stereoPan?: number;
   /** Cut rumble and lift speech presence. */
   voice?: boolean;
   /** Short room echo. */
   echo?: boolean;
   /** Reduce loud peaks while keeping quieter speech audible. */
   compressor?: boolean;
+  /** Semitone pitch shift applied without changing clip duration (-12..12). */
+  pitchSemitones?: number;
+  /** Export-time voice tone/color preset. */
+  voicePreset?: "natural" | "deep" | "bright" | "telephone" | "radio" | "robot";
 }
 
 export interface Clip {

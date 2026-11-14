@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { LogoMark } from "@/components/brand/Logo";
-import { Check, Export, Redo, Undo, X } from "@/components/ui/icons";
+import { Check, Export, Film, Moon, Music, Redo, Sun, Undo, X } from "@/components/ui/icons";
 import { renderLocally } from "@/lib/localRender";
 import { EditorProvider, useEditor } from "./EditorContext";
 import { MediaLibrary } from "./MediaLibrary";
@@ -15,7 +15,7 @@ import { Timeline } from "./Timeline";
 export function Editor() {
   const params = useSearchParams();
   const projectId = params.get("project");
-  const title = params.get("title") || "Bongo Nights (demo)";
+  const title = params.get("title") || "Untitled project";
   const aspect = params.get("aspect") || "16:9";
   return (
     <EditorProvider key={projectId ?? "demo"} projectId={projectId} title={title} aspect={aspect}>
@@ -28,7 +28,24 @@ function Shell() {
   const { togglePlay, undo, redo, selectedId, run, playhead, setPlayhead, doc, toasts, loading, loadError } = useEditor();
   const [exportOpen, setExportOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
-  const [smallScreenTab, setSmallScreenTab] = useState<"edit" | "media" | "cine">("edit");
+  const [smallScreenTab, setSmallScreenTab] = useState<"edit" | "media" | "inspector" | "cine">("edit");
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("cinemind-editor-theme");
+      const next = stored === "light" ? "light" : "dark";
+      setTheme(next);
+      document.documentElement.dataset.theme = next;
+    } catch { /* Theme preferences are optional when storage is unavailable. */ }
+  }, []);
+
+  const toggleTheme = () => {
+    const next = theme === "dark" ? "light" : "dark";
+    setTheme(next);
+    document.documentElement.dataset.theme = next;
+    try { localStorage.setItem("cinemind-editor-theme", next); } catch { /* The current view still changes. */ }
+  };
 
   // Keyboard shortcuts (spec §4.2).
   useEffect(() => {
@@ -96,15 +113,16 @@ function Shell() {
 
   return (
     <div className="flex h-[100dvh] flex-col overflow-hidden bg-bg text-text">
-      <TopBar onExport={() => setExportOpen(true)} />
-      <div className="hidden min-h-0 flex-[1.25] grid-cols-[240px_minmax(0,1fr)_320px] xl:grid">
+      <TopBar onExport={() => setExportOpen(true)} theme={theme} onToggleTheme={toggleTheme} />
+      <div className="hidden min-h-0 flex-[1.25] xl:grid xl:grid-cols-[64px_250px_minmax(0,1fr)_310px] 2xl:grid-cols-[190px_290px_minmax(0,1fr)_360px]">
+        <EditorNavigation />
         <MediaLibrary />
-        <Preview />
-        <SidePanel />
+        <Preview onOpenMedia={() => setSmallScreenTab("media")} />
+        <SidePanel initialTab="cine" />
       </div>
       <div className="flex min-h-0 flex-1 flex-col xl:hidden">
-        <nav aria-label="Editor workspace" className="grid h-11 shrink-0 grid-cols-3 border-b border-line bg-surface px-2">
-          {([ ["media", "Media"], ["edit", "Preview"], ["cine", "Cine · AI"] ] as const).map(([id, label]) => (
+        <nav aria-label="Editor workspace" className="grid h-11 shrink-0 grid-cols-4 border-b border-line bg-surface px-2">
+          {([ ["media", "Media"], ["edit", "Preview"], ["inspector", "Edit"], ["cine", "Cine · AI"] ] as const).map(([id, label]) => (
             <button key={id} onClick={() => setSmallScreenTab(id)} className={`relative text-[12px] font-semibold ${smallScreenTab === id ? "text-accent" : "text-muted"}`}>
               {label}
               {smallScreenTab === id && <span className="absolute inset-x-5 bottom-0 h-0.5 rounded bg-accent" />}
@@ -112,7 +130,7 @@ function Shell() {
           ))}
         </nav>
         <div className="min-h-0 flex-1">
-          {smallScreenTab === "media" ? <MediaLibrary /> : smallScreenTab === "cine" ? <SidePanel initialTab="cine" /> : <Preview />}
+          {smallScreenTab === "media" ? <MediaLibrary /> : smallScreenTab === "cine" ? <SidePanel initialTab="cine" /> : smallScreenTab === "inspector" ? <SidePanel initialTab="inspector" /> : <Preview onOpenMedia={() => setSmallScreenTab("media")} />}
         </div>
       </div>
       <div className="flex min-h-[170px] max-h-[40dvh] flex-[0.72] flex-col xl:min-h-[230px] xl:max-h-none xl:flex-1">
@@ -137,7 +155,31 @@ function Shell() {
   );
 }
 
-function TopBar({ onExport }: { onExport: () => void }) {
+function EditorNavigation() {
+  return (
+    <nav aria-label="Main navigation" className="flex min-h-0 flex-col border-r border-line bg-surface px-2 py-4 2xl:px-3">
+      <Link href="/" className="mb-6 flex items-center gap-2 px-1 2xl:px-2" aria-label="CineMind home">
+        <LogoMark size={28} />
+        <span className="hidden 2xl:block"><span className="block text-[13px] font-bold leading-tight">CineMind AI</span><span className="text-[10px] text-muted">Create · Edit · Inspire</span></span>
+      </Link>
+      <div className="space-y-1">
+        <NavLink href="/" label="Home"><span aria-hidden="true">⌂</span></NavLink>
+        <NavLink href="/editor" label="Editor" active><Film size={17} /></NavLink>
+        <NavLink href="/projects" label="Projects"><span aria-hidden="true">▰</span></NavLink>
+      </div>
+      <div className="mt-auto rounded-xl border border-line bg-surface-2 p-2 text-center 2xl:p-3">
+        <span className="text-accent"><Music size={18} /></span>
+        <p className="mt-1 hidden text-[11px] font-semibold text-soft 2xl:block">Your media stays local</p>
+      </div>
+    </nav>
+  );
+}
+
+function NavLink({ href, label, children, active = false }: { href: string; label: string; children: React.ReactNode; active?: boolean }) {
+  return <Link href={href} aria-current={active ? "page" : undefined} title={label} className={`flex h-10 items-center justify-center gap-3 rounded-lg px-2 text-[12px] font-semibold transition-colors 2xl:justify-start 2xl:px-3 ${active ? "bg-accent/10 text-accent" : "text-muted hover:bg-white/5 hover:text-text"}`}><span className="grid w-5 place-items-center text-base">{children}</span><span className="hidden 2xl:block">{label}</span></Link>;
+}
+
+function TopBar({ onExport, theme, onToggleTheme }: { onExport: () => void; theme: "dark" | "light"; onToggleTheme: () => void }) {
   const { title, undo, redo, canUndo, canRedo, doc, saving, projectId } = useEditor();
   return (
     <header className="relative flex h-12 shrink-0 items-center gap-2 border-b border-line bg-surface px-2 sm:gap-4 sm:px-4">
@@ -148,7 +190,7 @@ function TopBar({ onExport }: { onExport: () => void }) {
       <span className="h-5 w-px bg-line" />
       <div className="min-w-0 flex-1">
         <p className="truncate text-[14px] font-semibold leading-tight">{title}</p>
-        <p className="text-[11px] leading-tight text-faint">{!projectId ? "Demo · not saved" : saving ? "Syncing edit…" : `Edit synced · media local · v${doc.version}`}</p>
+        <p className="text-[11px] leading-tight text-faint">{!projectId ? "Local draft · not synced" : saving ? "Syncing edit…" : `Edit synced · media local · v${doc.version}`}</p>
       </div>
       <div className="ml-1 flex items-center gap-0.5 sm:ml-4">
         <button title="Undo (Ctrl+Z)" aria-label="Undo" disabled={!canUndo} onClick={undo} className="grid h-8 w-8 place-items-center rounded text-soft hover:bg-white/5 disabled:opacity-30">
@@ -160,6 +202,7 @@ function TopBar({ onExport }: { onExport: () => void }) {
       </div>
       <span className="ml-auto" />
       <span className="hidden text-[12px] text-faint 2xl:inline">Space play · S split · ? shortcuts</span>
+      <button onClick={onToggleTheme} aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`} title={`Switch to ${theme === "dark" ? "light" : "dark"} theme`} className="grid h-8 w-8 place-items-center rounded-lg border border-line text-soft hover:border-accent/50 hover:text-accent">{theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}</button>
       {!projectId && (
         <Link href="/signup" className="hidden rounded-full border border-line-strong px-3 py-1 text-[12px] text-soft hover:border-accent/60 hover:text-text sm:inline-flex">
           Sign up to save
@@ -178,7 +221,7 @@ function StatusBar() {
   return (
     <footer className="flex h-6 shrink-0 items-center gap-5 border-t border-line bg-surface px-4 text-[11px] text-faint">
       <span className="flex items-center gap-1.5">
-        <span className={`h-1.5 w-1.5 rounded-full ${projectId ? "bg-ok" : "bg-sun"}`} /> <span className="hidden sm:inline">{projectId ? "Connected · media stays on device" : "Demo session"}</span><span className="sm:hidden">{projectId ? "Local media" : "Demo"}</span>
+        <span className={`h-1.5 w-1.5 rounded-full ${projectId ? "bg-ok" : "bg-sun"}`} /> <span className="hidden sm:inline">{projectId ? "Connected · media stays on device" : "Local draft · media stays on device"}</span><span className="sm:hidden">{projectId ? "Local media" : "Local draft"}</span>
       </span>
       <span>
         {clips} clips · {assets.length} media

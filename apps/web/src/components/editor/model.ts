@@ -102,6 +102,24 @@ export function sampleTimeline(projectId: string, aspect: string = "16:9"): Time
   };
 }
 
+export function emptyTimeline(projectId: string, aspect: string = "16:9"): TimelineDocument {
+  const [width, height] = aspect === "9:16" ? [1080, 1920] : aspect === "1:1" ? [1080, 1080] : [1920, 1080];
+  return {
+    schemaVersion: 1,
+    projectId,
+    version: 1,
+    sequence: { width, height, fps: { num: FPS, den: 1 }, audioSampleRate: 48000 },
+    tracks: [
+      { id: "v2", kind: "video", order: 2, name: "V2", clips: [] },
+      { id: "v1", kind: "video", order: 1, name: "V1", clips: [] },
+      { id: "a1", kind: "audio", order: 1, name: "A1", clips: [] },
+      { id: "a2", kind: "audio", order: 2, name: "A2", clips: [] },
+      { id: "t1", kind: "text", order: 1, name: "T1", clips: [] },
+    ],
+    transitions: [],
+  };
+}
+
 /** Deterministic pseudo-waveform for media without analysis yet. */
 export function waveform(seed: string, n: number): number[] {
   let h = 2166136261;

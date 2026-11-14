@@ -21,7 +21,7 @@ export function Timeline() {
   const [drag, setDrag] = useState<Drag | null>(null);
 
   const tracks = useMemo(() => {
-    const order = { video: 0, text: 1, audio: 2 } as const;
+    const order = { video: 0, audio: 1, text: 2 } as const;
     return [...doc.tracks].sort((a, b) =>
       a.kind === b.kind ? (a.kind === "audio" ? a.order - b.order : b.order - a.order) : order[a.kind] - order[b.kind],
     );
@@ -172,12 +172,10 @@ export function Timeline() {
   for (let s = 0; s * fps * zoom < width; s += tickEvery) ticks.push(s);
 
   return (
-    <section className="flex min-h-0 flex-col border-t border-line bg-[#121417]" onPointerMove={onPointerMove} onPointerUp={onPointerUp}>
+    <section className="flex min-h-0 flex-col border-t border-line bg-bg-deep" onPointerMove={onPointerMove} onPointerUp={onPointerUp}>
       {/* Toolbar */}
       <div className="thin-scroll flex h-10 shrink-0 items-center gap-1 overflow-x-auto border-b border-line px-2 text-[12px] sm:px-3">
-        <ToolBtn label="Split at playhead (S)" onClick={splitAtPlayhead}>
-          <Scissors size={15} />
-        </ToolBtn>
+        <button title="Split selected clip at playhead (S)" aria-label="Cut clip at playhead" onClick={splitAtPlayhead} className="flex h-7 items-center gap-1.5 rounded-md bg-accent/10 px-2 text-[11px] font-bold text-accent hover:bg-accent/20"><Scissors size={14} /> Cut</button>
         <ToolBtn label="Delete selected (Del)" disabled={!selectedId} onClick={() => selectedId && run([{ type: "clip.delete", clipId: selectedId }], "Deleted clip")}>
           <Trash size={15} />
         </ToolBtn>
@@ -217,7 +215,7 @@ export function Timeline() {
         <div ref={scrollRef} className="thin-scroll relative min-w-0 flex-1 overflow-x-auto overflow-y-hidden">
           <div ref={lanesRef} className="relative" style={{ width }}>
             {/* Ruler */}
-            <div className="sticky top-0 z-20 h-7 cursor-ew-resize border-b border-line bg-[#15181b]" onPointerDown={scrub} onPointerMove={(e) => e.buttons === 1 && setPlayhead(frameFromClientX(e.clientX))}>
+            <div className="sticky top-0 z-20 h-7 cursor-ew-resize border-b border-line bg-surface-2" onPointerDown={scrub} onPointerMove={(e) => e.buttons === 1 && setPlayhead(frameFromClientX(e.clientX))}>
               {ticks.map((s) => (
                 <div key={s} className="absolute top-0 h-full border-l border-white/10" style={{ left: s * fps * zoom }}>
                   <span className="ml-1 font-mono text-[10px] text-faint">{framesToTimecode(s * fps, fps).slice(3, 8)}</span>

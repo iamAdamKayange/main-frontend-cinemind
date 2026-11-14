@@ -166,6 +166,15 @@ const SOUND_TOGGLES: { k: "normalize" | "denoise" | "voice" | "echo" | "compress
   { k: "compressor", label: "Voice compressor", hint: "Tame peaks and even out speech" },
 ];
 
+const VOICE_PRESETS: { value: NonNullable<ClipEffects["voicePreset"]>; label: string }[] = [
+  { value: "natural", label: "Natural" },
+  { value: "deep", label: "Deep voice" },
+  { value: "bright", label: "Bright voice" },
+  { value: "telephone", label: "Telephone" },
+  { value: "radio", label: "Radio" },
+  { value: "robot", label: "Robot / synth" },
+];
+
 export function SoundGroup({ clipId }: { clipId: string }) {
   const { doc, run, assetById } = useEditor();
   const hit = findClip(doc, clipId);
@@ -207,10 +216,20 @@ export function SoundGroup({ clipId }: { clipId: string }) {
           <input type="checkbox" checked={!!fx[k]} onChange={(e) => set({ [k]: e.target.checked })} className="h-4 w-4 accent-[var(--accent)]" />
         </label>
       ))}
+      <label className="block space-y-1.5 text-[12px]">
+        <span className="text-soft">Voice character</span>
+        <select value={fx.voicePreset ?? "natural"} onChange={(e) => set({ voicePreset: e.target.value as NonNullable<ClipEffects["voicePreset"]> })} className="w-full rounded-lg border border-line bg-bg-deep px-3 py-2 text-text outline-none focus:border-accent/60">
+          {VOICE_PRESETS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
+        </select>
+      </label>
+      <Slider label="Pitch shift" min={-12} max={12} step={1} value={fx.pitchSemitones ?? 0} fmt={(v) => `${v > 0 ? "+" : ""}${v} semitones`} onCommit={(v) => set({ pitchSemitones: v })} />
       <Slider label="Bass" min={-12} max={12} step={0.5} value={fx.bass ?? 0} fmt={(v) => `${v > 0 ? "+" : ""}${v} dB`} onCommit={(v) => set({ bass: v })} />
+      <Slider label="Mid" min={-12} max={12} step={0.5} value={fx.mid ?? 0} fmt={(v) => `${v > 0 ? "+" : ""}${v} dB`} onCommit={(v) => set({ mid: v })} />
       <Slider label="Treble" min={-12} max={12} step={0.5} value={fx.treble ?? 0} fmt={(v) => `${v > 0 ? "+" : ""}${v} dB`} onCommit={(v) => set({ treble: v })} />
+      <Slider label="Stereo balance" min={-1} max={1} step={0.05} value={fx.stereoPan ?? 0} fmt={(v) => v === 0 ? "Center" : v < 0 ? `${Math.round(-v * 100)}% left` : `${Math.round(v * 100)}% right`} onCommit={(v) => set({ stereoPan: v })} />
+      <ActionBtn label="Reset sound" onClick={() => set({ normalize: false, denoise: false, voice: false, echo: false, compressor: false, voicePreset: "natural", pitchSemitones: 0, bass: 0, mid: 0, treble: 0, stereoPan: 0 })} />
       {track.kind === "video" && asset?.kind === "video" && <ActionBtn label="Detach audio to its own track" onClick={detach} />}
-      <p className="text-[11px] text-faint">Volume and fades play live; sound effects are applied in the exported video.</p>
+      <p className="rounded-lg border border-line bg-bg-deep p-2.5 text-[11px] leading-relaxed text-muted">Volume and fades preview live. Voice, EQ, noise reduction, echo and compression are applied when you render the MP4 on this device.</p>
     </Group>
   );
 }
