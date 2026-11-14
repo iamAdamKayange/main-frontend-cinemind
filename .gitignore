@@ -1,0 +1,16 @@
+node_modules/
+.next/
+out/
+dist/
+build/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+apps/desktop/src-tauri/target/
+apps/mobile/.dart_tool/
+apps/mobile/build/
+data/
+apps/api/test/.demo-session.json
+deploy/.env

@@ -1,0 +1,13 @@
+{
+  "name": "@cinemind/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "CineMind AI desktop shell (Tauri 2) — wraps the shared web editor on Windows, macOS and Linux.",
+  "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.9.0"
+  }
+}
