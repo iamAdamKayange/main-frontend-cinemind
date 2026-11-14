@@ -1,7 +1,7 @@
 "use client";
 
 import { clipDuration, clipEnd, framesToTimecode, type Clip, type Track } from "@cinemind/timeline-engine";
-import { useMemo, useRef, useState, type PointerEvent as RPointerEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type PointerEvent as RPointerEvent } from "react";
 import { useEditor } from "./EditorContext";
 import { FPS, clipPeaks, waveform } from "./model";
 import { Eye, Lock, Mute, Scissors, Trash, Volume, ZoomIn, ZoomOut } from "@/components/ui/icons";
@@ -19,6 +19,21 @@ export function Timeline() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const lanesRef = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState<Drag | null>(null);
+  const [trackScale, setTrackScale] = useState(1);
+
+  useEffect(() => {
+    try {
+      const saved = Number(localStorage.getItem("cinemind-track-height"));
+      if (Number.isFinite(saved) && saved >= 0.55 && saved <= 1.8) setTrackScale(saved);
+    } catch { /* Keep the default size when storage is unavailable. */ }
+  }, []);
+
+  const changeTrackScale = (value: number) => {
+    const next = Math.max(0.55, Math.min(1.8, value));
+    setTrackScale(next);
+    try { localStorage.setItem("cinemind-track-height", String(next)); } catch { /* The current timeline still resizes. */ }
+  };
+  const laneHeight = (kind: Track["kind"]) => Math.round(ROW_H[kind] * trackScale);
 
   const tracks = useMemo(() => {
     const order = { video: 0, audio: 1, text: 2 } as const;
@@ -200,6 +215,21 @@ export function Timeline() {
         <ToolBtn label="Zoom in" onClick={() => setZoom(Math.min(12, zoom * 1.4))}>
           <ZoomIn size={15} />
         </ToolBtn>
+        <span className="mx-1 h-4 w-px bg-line" />
+        <span className="whitespace-nowrap text-faint">Track height</span>
+        <ToolBtn label="Reduce track height" onClick={() => changeTrackScale(trackScale - 0.15)}><ZoomOut size={14} /></ToolBtn>
+        <input
+          aria-label="Track height"
+          title="Change video, audio and text track heights"
+          type="range"
+          min={0.55}
+          max={1.8}
+          step={0.05}
+          value={trackScale}
+          onChange={(e) => changeTrackScale(Number(e.target.value))}
+          className="w-20 accent-[var(--accent)]"
+        />
+        <ToolBtn label="Increase track height" onClick={() => changeTrackScale(trackScale + 0.15)}><ZoomIn size={14} /></ToolBtn>
       </div>
 
       <div className="flex min-h-0 flex-1">
@@ -207,7 +237,7 @@ export function Timeline() {
         <div className="shrink-0 border-r border-line bg-surface" style={{ width: HEADER_W }}>
           <div className="h-7 border-b border-line" />
           {tracks.map((t) => (
-            <TrackHeader key={t.id} track={t} />
+            <TrackHeader key={t.id} track={t} height={laneHeight(t.kind)} />
           ))}
         </div>
 
@@ -236,7 +266,7 @@ export function Timeline() {
                 key={t.id}
                 data-track-id={t.id}
                 className={`relative border-b border-line ${drag?.mode === "move" && drag.targetTrackId === t.id ? "bg-white/[0.03]" : ""} ${t.hidden ? "opacity-40" : ""}`}
-                style={{ height: ROW_H[t.kind] }}
+                style={{ height: laneHeight(t.kind) }}
                 onPointerDown={(e) => {
                   if (e.target === e.currentTarget) {
                     select(null);
@@ -306,12 +336,12 @@ export function Timeline() {
   );
 }
 
-function TrackHeader({ track }: { track: Track }) {
+function TrackHeader({ track, height }: { track: Track; height: number }) {
   const { run } = useEditor();
   const toggle = (k: "muted" | "locked" | "hidden") => run([{ type: "track.update", trackId: track.id, [k]: !track[k] }]);
   const color = track.kind === "video" ? "text-[#8fb7cc]" : track.kind === "audio" ? "text-[#9cc79f]" : "text-accent";
   return (
-    <div className="flex items-center gap-1 border-b border-line px-1.5 sm:gap-2 sm:px-3" style={{ height: ROW_H[track.kind] }}>
+    <div className="flex items-center gap-1 border-b border-line px-1.5 sm:gap-2 sm:px-3" style={{ height }}>
       <span className={`w-5 shrink-0 font-mono text-[10px] sm:w-6 sm:text-[11px] ${color}`}>{track.name}</span>
       <span className="ml-auto flex items-center gap-0">
         {track.kind !== "audio" && (

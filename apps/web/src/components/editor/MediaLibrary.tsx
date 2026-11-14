@@ -136,10 +136,10 @@ export function MediaLibrary() {
       </div>
 
       <div className="thin-scroll min-h-0 flex-1 overflow-y-auto px-3 pb-3">
-        {(tab === "media" || tab === "audio") && <div className="grid grid-cols-2 gap-2.5">
+        {(tab === "media" || tab === "audio") && <div className="space-y-2">
           {shown.map((a) => (
-            <div key={a.id} className="group min-w-0 overflow-hidden rounded-[9px] border border-line bg-bg-deep transition hover:border-accent/50">
-              <div className="relative aspect-video overflow-hidden">
+            <div key={a.id} className="group flex min-w-0 items-center gap-2 overflow-hidden rounded-[9px] border border-line bg-bg-deep transition hover:border-accent/50">
+              <div className="relative h-[62px] w-[92px] shrink-0 overflow-hidden">
                 <AssetThumb asset={a} />
                 {a.durationFrames > 0 && (
                   <span className="absolute bottom-1 right-1 rounded bg-black/60 px-1 font-mono text-[9px] text-white/80">{(a.durationFrames / FPS).toFixed(0)}s</span>
@@ -173,7 +173,7 @@ export function MediaLibrary() {
                   </div>
                 )}
               </div>
-              <div className="p-2">
+              <div className="min-w-0 flex-1 p-2">
                 <p className="truncate text-[11px] font-semibold text-soft" title={a.name}>{a.name}</p>
                 <p className="truncate text-[10px] text-faint">{a.sizeLabel}</p>
                 {usable(a) && <button type="button" onClick={() => addToTimeline(a)} className="mt-2 flex min-h-8 w-full items-center justify-center gap-1 rounded-md bg-accent/10 px-2 text-[10px] font-bold text-accent transition hover:bg-accent hover:text-accent-ink"><Plus size={12} /> Add to timeline</button>}

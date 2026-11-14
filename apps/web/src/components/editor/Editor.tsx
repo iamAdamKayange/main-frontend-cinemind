@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { LogoMark } from "@/components/brand/Logo";
 import { Check, Export, Film, Moon, Music, Redo, Sun, Undo, X } from "@/components/ui/icons";
@@ -30,6 +30,8 @@ function Shell() {
   const [helpOpen, setHelpOpen] = useState(false);
   const [smallScreenTab, setSmallScreenTab] = useState<"edit" | "media" | "inspector" | "cine">("edit");
   const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [timelineHeight, setTimelineHeight] = useState(330);
+  const timelineResize = useRef<{ y: number; height: number } | null>(null);
 
   useEffect(() => {
     try {
@@ -46,6 +48,21 @@ function Shell() {
     document.documentElement.dataset.theme = next;
     try { localStorage.setItem("cinemind-editor-theme", next); } catch { /* The current view still changes. */ }
   };
+
+  useEffect(() => {
+    const move = (e: PointerEvent) => {
+      if (!timelineResize.current) return;
+      const delta = timelineResize.current.y - e.clientY;
+      setTimelineHeight(Math.max(210, Math.min(Math.round(window.innerHeight * 0.55), timelineResize.current.height + delta)));
+    };
+    const end = () => { timelineResize.current = null; };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", end);
+    return () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", end);
+    };
+  }, []);
 
   // Keyboard shortcuts (spec §4.2).
   useEffect(() => {
@@ -114,7 +131,7 @@ function Shell() {
   return (
     <div className="flex h-[100dvh] flex-col overflow-hidden bg-bg text-text">
       <TopBar onExport={() => setExportOpen(true)} theme={theme} onToggleTheme={toggleTheme} />
-      <div className="hidden min-h-0 flex-[1.25] xl:grid xl:grid-cols-[64px_250px_minmax(0,1fr)_310px] 2xl:grid-cols-[190px_290px_minmax(0,1fr)_360px]">
+      <div className="hidden min-h-0 flex-1 xl:grid xl:grid-cols-[180px_240px_minmax(320px,1fr)_330px] 2xl:grid-cols-[220px_300px_minmax(0,1fr)_420px]">
         <EditorNavigation />
         <MediaLibrary />
         <Preview onOpenMedia={() => setSmallScreenTab("media")} />
@@ -133,7 +150,19 @@ function Shell() {
           {smallScreenTab === "media" ? <MediaLibrary /> : smallScreenTab === "cine" ? <SidePanel initialTab="cine" /> : smallScreenTab === "inspector" ? <SidePanel initialTab="inspector" /> : <Preview onOpenMedia={() => setSmallScreenTab("media")} />}
         </div>
       </div>
-      <div className="flex min-h-[170px] max-h-[40dvh] flex-[0.72] flex-col xl:min-h-[230px] xl:max-h-none xl:flex-1">
+      <div className="flex min-h-0 shrink-0 flex-col" style={{ height: timelineHeight, maxHeight: "55dvh" }}>
+        <button
+          type="button"
+          aria-label="Resize timeline height"
+          title="Drag to resize timeline"
+          onPointerDown={(e) => {
+            timelineResize.current = { y: e.clientY, height: timelineHeight };
+            e.currentTarget.setPointerCapture(e.pointerId);
+          }}
+          className="group flex h-2 w-full shrink-0 cursor-row-resize touch-none items-center justify-center border-t border-line bg-bg-deep hover:bg-accent/10"
+        >
+          <span className="h-1 w-12 rounded-full bg-muted/50 transition group-hover:w-20 group-hover:bg-accent" />
+        </button>
         <Timeline />
       </div>
       <StatusBar />
@@ -157,26 +186,26 @@ function Shell() {
 
 function EditorNavigation() {
   return (
-    <nav aria-label="Main navigation" className="flex min-h-0 flex-col border-r border-line bg-surface px-2 py-4 2xl:px-3">
-      <Link href="/" className="mb-6 flex items-center gap-2 px-1 2xl:px-2" aria-label="CineMind home">
+    <nav aria-label="Main navigation" className="flex min-h-0 flex-col border-r border-line bg-surface px-3 py-4">
+      <Link href="/" className="mb-6 flex items-center gap-2 px-1" aria-label="CineMind home">
         <LogoMark size={28} />
-        <span className="hidden 2xl:block"><span className="block text-[13px] font-bold leading-tight">CineMind AI</span><span className="text-[10px] text-muted">Create · Edit · Inspire</span></span>
+        <span><span className="block text-[13px] font-bold leading-tight">CineMind AI</span><span className="text-[10px] text-muted">Create · Edit · Inspire</span></span>
       </Link>
       <div className="space-y-1">
         <NavLink href="/" label="Home"><span aria-hidden="true">⌂</span></NavLink>
         <NavLink href="/editor" label="Editor" active><Film size={17} /></NavLink>
         <NavLink href="/projects" label="Projects"><span aria-hidden="true">▰</span></NavLink>
       </div>
-      <div className="mt-auto rounded-xl border border-line bg-surface-2 p-2 text-center 2xl:p-3">
+      <div className="mt-auto rounded-xl border border-line bg-surface-2 p-3 text-center">
         <span className="text-accent"><Music size={18} /></span>
-        <p className="mt-1 hidden text-[11px] font-semibold text-soft 2xl:block">Your media stays local</p>
+        <p className="mt-1 text-[11px] font-semibold text-soft">Your media stays local</p>
       </div>
     </nav>
   );
 }
 
 function NavLink({ href, label, children, active = false }: { href: string; label: string; children: React.ReactNode; active?: boolean }) {
-  return <Link href={href} aria-current={active ? "page" : undefined} title={label} className={`flex h-10 items-center justify-center gap-3 rounded-lg px-2 text-[12px] font-semibold transition-colors 2xl:justify-start 2xl:px-3 ${active ? "bg-accent/10 text-accent" : "text-muted hover:bg-white/5 hover:text-text"}`}><span className="grid w-5 place-items-center text-base">{children}</span><span className="hidden 2xl:block">{label}</span></Link>;
+  return <Link href={href} aria-current={active ? "page" : undefined} title={label} className={`flex h-10 items-center justify-start gap-3 rounded-lg px-3 text-[12px] font-semibold transition-colors ${active ? "bg-accent/10 text-accent" : "text-muted hover:bg-white/5 hover:text-text"}`}><span className="grid w-5 place-items-center text-base">{children}</span><span>{label}</span></Link>;
 }
 
 function TopBar({ onExport, theme, onToggleTheme }: { onExport: () => void; theme: "dark" | "light"; onToggleTheme: () => void }) {
@@ -184,7 +213,7 @@ function TopBar({ onExport, theme, onToggleTheme }: { onExport: () => void; them
   return (
     <header className="relative flex h-12 shrink-0 items-center gap-2 border-b border-line bg-surface px-2 sm:gap-4 sm:px-4">
       <div className="tz-stripe absolute inset-x-0 top-0 h-[2px]" />
-      <Link href="/projects" className="flex items-center gap-2" title="All projects">
+      <Link href="/projects" className="flex items-center gap-2 xl:hidden" title="All projects">
         <LogoMark size={24} />
       </Link>
       <span className="h-5 w-px bg-line" />
